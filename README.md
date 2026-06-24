@@ -32,13 +32,19 @@ just install            # builds and installs to /usr/local/bin/
 Create `~/.config/ribbon/config.rib`:
 
 ```scheme
+; config.rib — status bar configuration
 (bar.create)
-(bar.set-interval 1)
-(bar.set-background height 30 colour "#1e1e2e" font-color "#cdd6f4")
-(bar.set-left distro-logo (cpu fmt "CPU: {}"))
-(bar.set-center clock)
-(bar.set-right (battery fmt "Bat: {}") txt " " battery-state txt " | " (wifi fmt "SSID: {}"))
+(bar.set-interval 0.2)
+(bar.set-font "DejaVu Sans" size 14)
+(bar.set-background height 30 colour "#1e1e2e" font-color "#c0caf5")
+; optional auto-separator: (bar.separator " | " colour "#585b70")
+(bar.wifi-icon #t)
+(bar.set-logo-size 24)
 (bar.set-widget-gap 0)
+(bar.set-left distro-logo)
+(bar.set-center clock txt " | " (!"date '+%A %d %Z'"))
+(bar.set-right (battery fmt "Bat: {}") txt " " battery-state txt " | " (cpu fmt "CPU: {}") txt " | " (memory fmt "Mem: {}") txt " | " (volume fmt "VOL: {}") txt " | " (wifi fmt "SSID: {}"))
+; no systray currently — on the roadmap
 (bar.pad left 8)
 (bar.start)
 ```
