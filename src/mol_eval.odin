@@ -441,7 +441,7 @@ apply :: proc(env: ^Env, fn: ^Expr, args: ^[dynamic]Expr) -> Expr {
 
   case "bar.set-interval":
     expect_args("bar.set-interval", args, 1)
-    bar_config.interval = int(get_num("bar.set-interval", &args[0]))
+    bar_config.interval_ms = i32(get_num("bar.set-interval", &args[0]) * 1000)
     return expr_sym("ok")
 
   case "bar.set-font":

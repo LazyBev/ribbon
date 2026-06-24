@@ -3,6 +3,7 @@ package main
 import "base:runtime"
 import "core:os"
 import "core:fmt"
+import "core:time"
 
 @(default_calling_convention="c")
 foreign _ {
@@ -163,7 +164,8 @@ run_bar :: proc(cfg: ^BarConfig) {
   set_font_color_from_cfg(r, cfg)
 
   pollfd: PollFd
-  last_sec: i64
+  first := true
+  last: time.Time
   cc: CpuCache
   bc: BatteryCache
   wd: WifiData
@@ -174,8 +176,7 @@ run_bar :: proc(cfg: ^BarConfig) {
     pollfd.events = POLLIN
     pollfd.revents = 0
 
-    first := last_sec == 0
-    timeout: i32 = 50 if first else 1000
+    timeout: i32 = 50 if first else cfg.interval_ms
 
     poll(&pollfd, 1, timeout)
     if pollfd.revents & POLLIN != 0 { renderer_dispatch(r) }
@@ -187,12 +188,12 @@ run_bar :: proc(cfg: ^BarConfig) {
       continue
     }
 
-    cur_t: i64
-    time(&cur_t)
-    if !first && cur_t - last_sec < 1 {
+    now := time.now()
+    if !first && time.diff(last, now) < time.Duration(cfg.interval_ms) * time.Millisecond {
       continue
     }
-    last_sec = cur_t
+    last = now
+    first = false
 
     font_h: f64 = 20
     if len(cfg.center) > 0 {
