@@ -8,24 +8,23 @@
 #     inputs.ribbon.url = "github:LazyBev/ribbon";
 #
 #     outputs = { ribbon, ... }: {
-#       # As a package (any system):
+#       # As a package:
 #       #   ribbon.packages.${system}.default
+#       #   nix build github:LazyBev/ribbon
 #
-#       # In NixOS/NixOS modules:
+#       # With an overlay (makes pkgs.ribbon available):
+#       #   nixpkgs.overlays = [ ribbon.overlays.default ];
+#
+#       # In NixOS:
 #       #   environment.systemPackages = [
-#       #     inputs.ribbon.packages.${pkgs.system}.default
-#       #   ];
-#
-#       # In home-manager:
-#       #   home.packages = [
 #       #     inputs.ribbon.packages.${pkgs.system}.default
 #       #   ];
 #     };
 #   }
 #
-# Pre-built binaries: the nixConfig below tells Nix to fetch
-# from ribbon.cachix.org (no local compilation). Run with
-# --accept-flake-config to trust the cache on first use.
+# First time: pass --accept-flake-config to trust the binary
+# cache (ribbon.cachix.org) so Nix downloads pre-built binaries
+# instead of compiling from source.
 {
   description = "ribbon — Wayland status bar with .rib DSL";
 
@@ -53,5 +52,10 @@
             cairo librsvg glib gdk-pixbuf pango fontconfig freetype libxkbcommon
           ];
         };
-      });
+      })
+    // {
+      overlays.default = final: prev: {
+        ribbon = final.callPackage ./package.nix {};
+      };
+    };
 }
