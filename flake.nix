@@ -1,3 +1,31 @@
+# ╔═══════════════════════════════════════════════════════════╗
+# ║   ribbon — Wayland status bar with .rib DSL               ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Usage in your flake:
+#
+#   {
+#     inputs.ribbon.url = "github:LazyBev/ribbon";
+#
+#     outputs = { ribbon, ... }: {
+#       # As a package (any system):
+#       #   ribbon.packages.${system}.default
+#
+#       # In NixOS/NixOS modules:
+#       #   environment.systemPackages = [
+#       #     inputs.ribbon.packages.${pkgs.system}.default
+#       #   ];
+#
+#       # In home-manager:
+#       #   home.packages = [
+#       #     inputs.ribbon.packages.${pkgs.system}.default
+#       #   ];
+#     };
+#   }
+#
+# Pre-built binaries: the nixConfig below tells Nix to fetch
+# from ribbon.cachix.org (no local compilation). Run with
+# --accept-flake-config to trust the cache on first use.
 {
   description = "ribbon — Wayland status bar with .rib DSL";
 
