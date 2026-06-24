@@ -1,30 +1,3 @@
-# ╔═══════════════════════════════════════════════════════════╗
-# ║   ribbon — Wayland status bar with .rib DSL               ║
-# ╚═══════════════════════════════════════════════════════════╝
-#
-# Usage in your flake:
-#
-#   {
-#     inputs.ribbon.url = "github:LazyBev/ribbon";
-#
-#     outputs = { ribbon, ... }: {
-#       # As a package:
-#       #   ribbon.packages.${system}.default
-#       #   nix build github:LazyBev/ribbon
-#
-#       # With an overlay (makes pkgs.ribbon available):
-#       #   nixpkgs.overlays = [ ribbon.overlays.default ];
-#
-#       # In NixOS:
-#       #   environment.systemPackages = [
-#       #     inputs.ribbon.packages.${pkgs.system}.default
-#       #   ];
-#     };
-#   }
-#
-# First time: pass --accept-flake-config to trust the binary
-# cache (ribbon.cachix.org) so Nix downloads pre-built binaries
-# instead of compiling from source.
 {
   description = "ribbon — Wayland status bar with .rib DSL";
 
