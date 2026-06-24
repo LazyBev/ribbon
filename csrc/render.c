@@ -462,7 +462,7 @@ void renderer_draw_wifi(renderer_t *r, int signal, const char *ssid,
   double s = (double)(r->height - 8);
   if (s < 8) s = 8;
 
-  int n = (signal > 75) ? 4 : (signal > 50) ? 3 : (signal > 25) ? 2 : (signal > 0) ? 1 : 0;
+  int n = (signal > 66) ? 3 : (signal > 33) ? 2 : (signal > 0) ? 1 : 0;
   double dot_r   = s * 0.09;
   double thick   = s * 0.10;
   double gap     = s * 0.06;
