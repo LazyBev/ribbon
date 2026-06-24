@@ -2,8 +2,8 @@
   description = "ribbon — Wayland status bar with .rib DSL";
 
   nixConfig = {
-    extra-substituters = [ "https://CHANGE_ME.cachix.org" ];
-    extra-trusted-public-keys = [ "CHANGE_ME.cachix.org-1:CHANGE_ME" ];
+    extra-substituters = [ "https://ribbon.cachix.org" ];
+    extra-trusted-public-keys = [ "ribbon.cachix.org-1:1gncTaQfEIHh3mX9I0bi8nZ4WSKsPredqTrRwSSlT3g=" ];
   };
 
   inputs = {
