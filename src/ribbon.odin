@@ -237,27 +237,27 @@ run_bar :: proc(cfg: ^BarConfig) {
 main :: proc() {
   context.allocator = runtime.default_allocator()
 
-  mol_path: string
+  rib_path: string
   if len(os.args) > 1 {
     if os.args[1] == "kill" {
       _ = system(cstring("(sleep 0.2 && pkill -x ribbon) &"))
       os.exit(0)
     }
-    mol_path = os.args[1]
+    rib_path = os.args[1]
   } else {
     home_buf: Buf512
     home := os.get_env_buf(home_buf[:], "HOME")
-    mol_path = fmt.aprintf("%s/.config/ribbon/config.rib", home)
+    rib_path = fmt.aprintf("%s/.config/ribbon/config.rib", home)
   }
 
   path_buf: Buf512
-  pn := copy(path_buf[:], mol_path)
+  pn := copy(path_buf[:], rib_path)
   if pn < len(path_buf) { path_buf[pn] = 0 }
 
   fbuf: Buf4096
   s := fbuf[:]
   if !read_file(cstring(&path_buf[0]), &s) {
-    fmt.eprintf("error: config not found at %s\n", mol_path)
+    fmt.eprintf("error: config not found at %s\n", rib_path)
     fmt.eprintln("usage: ribbon [config-file]")
     fmt.eprintln("       ribbon kill")
     os.exit(1)

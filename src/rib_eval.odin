@@ -1,7 +1,7 @@
 package main
 
 /* ================================================================
- * mol_eval.odin — equivalent of eval.ml
+ * rib_eval.odin — rib DSL evaluator
  *
  * Evaluates .rib s-expressions, managing bar state.
  * ================================================================ */
@@ -60,7 +60,7 @@ expect_min_args :: proc(name: string, args: ^[dynamic]Expr, n: int) {
   if len(args) < n { arity_error(name, fmt.aprintf("at least %d", n), len(args)) }
 }
 
-get_num :: proc(name: string, e: ^Expr) -> i64 {
+get_num :: proc(name: string, e: ^Expr) -> f64 {
   if e.kind != .Num { type_error(name, "a number", e) }
   return e.num
 }
@@ -358,13 +358,13 @@ apply :: proc(env: ^Env, fn: ^Expr, args: ^[dynamic]Expr) -> Expr {
   switch name {
   case "+":
     if len(args) < 1 { arity_error("+", "at least 1 number", len(args)) }
-    sum: i64 = 0
+    sum: f64 = 0
     for i in 0 ..< len(args) { sum += get_num("+", &args[i]) }
     return expr_num(sum)
 
   case "*":
     if len(args) < 1 { arity_error("*", "at least 1 number", len(args)) }
-    prod: i64 = 1
+    prod: f64 = 1
     for i in 0 ..< len(args) { prod *= get_num("*", &args[i]) }
     return expr_num(prod)
 

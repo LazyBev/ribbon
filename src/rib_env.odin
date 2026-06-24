@@ -1,7 +1,7 @@
 package main
 
 /* ================================================================
- * mol_env.odin — equivalent of env.ml
+ * rib_env.odin — rib DSL environment
  *
  * Environment is a linked list of (name, expr) bindings.
  * ================================================================ */

@@ -98,7 +98,7 @@ atom :: proc(s: string) -> Expr {
   if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
     return expr_str(s[1:len(s)-1])
   }
-  n: i64
+  n: f64
   ok := false
   if len(s) > 0 {
     start := 0
@@ -107,16 +107,26 @@ atom :: proc(s: string) -> Expr {
     if start < len(s) {
       v: i64 = 0
       valid := true
-      for i := start; i < len(s); i += 1 {
+      digits := false
+      frac := false
+      frac_div: f64 = 1
+      i := start
+      for i < len(s) {
         if s[i] >= '0' && s[i] <= '9' {
           v = v * 10 + i64(s[i] - '0')
+          digits = true
+          if frac { frac_div *= 10 }
+        } else if s[i] == '.' && !frac {
+          frac = true
         } else {
           valid = false
           break
         }
+        i += 1
       }
-      if valid {
-        n = -v if neg else v
+      if valid && digits {
+        n = f64(v) / frac_div
+        if neg { n = -n }
         ok = true
       }
     }

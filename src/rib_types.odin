@@ -18,14 +18,14 @@ Lambda :: struct {
 
 Expr :: struct {
   kind:   ExprKind,
-  num:    i64,
+  num:    f64,
   sym:    string,
   bool:   bool,
   list:   [dynamic]Expr,
   lambda: Lambda,
 }
 
-expr_num :: proc(n: i64) -> Expr {
+expr_num :: proc(n: f64) -> Expr {
   return Expr{kind = .Num, num = n}
 }
 
@@ -66,7 +66,7 @@ expr_lambda :: proc(params: [dynamic]string, body: Expr) -> Expr {
 
 string_of_expr :: proc(e: ^Expr) -> string {
   switch e.kind {
-  case .Num: return fmt_int(e.num)
+  case .Num: return fmt.aprintf("%g", e.num)
   case .Sym: return e.sym
   case .Str: return fmt.aprintf("\"%s\"", e.sym)
   case .Bool: return "#t" if e.bool else "#f"
