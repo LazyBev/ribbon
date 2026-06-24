@@ -1,6 +1,11 @@
 {
   description = "ribbon — Wayland status bar with .rib DSL";
 
+  nixConfig = {
+    extra-substituters = [ "https://CHANGE_ME.cachix.org" ];
+    extra-trusted-public-keys = [ "CHANGE_ME.cachix.org-1:CHANGE_ME" ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
