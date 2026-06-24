@@ -257,7 +257,10 @@ main :: proc() {
   fbuf: Buf4096
   s := fbuf[:]
   if !read_file(cstring(&path_buf[0]), &s) {
-    panic("cannot read file")
+    fmt.eprintf("error: config not found at %s\n", mol_path)
+    fmt.eprintln("usage: ribbon [config-file]")
+    fmt.eprintln("       ribbon kill")
+    os.exit(1)
   }
   n := 0
   for n < len(s) && s[n] != 0 { n += 1 }
