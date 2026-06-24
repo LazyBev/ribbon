@@ -1,0 +1,5 @@
+build/
+result
+core.*
+*.o
+ribbon

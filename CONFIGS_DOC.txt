@@ -1,0 +1,481 @@
+╔═══════════════════════════════════════════════════════════╗
+║              ribbon — status bar config guide             ║
+╚═══════════════════════════════════════════════════════════╝
+
+Config files are evaluated top to bottom. Each line is an
+s-expression, basically (command arg1 arg2 ...). Line comments
+start with ;, block comments use /* ... */. Blank lines are
+ignored. Everything is
+processed in order, and if you call the same command twice
+the second call overrides the first.
+
+────────────────────────────────────────────────────────────
+  1. CREATING THE BAR
+────────────────────────────────────────────────────────────
+
+    (bar.create)
+
+Always first. Resets everything to defaults. Without it the
+rest of the commands will panic.
+
+────────────────────────────────────────────────────────────
+  2. POLLING INTERVAL
+────────────────────────────────────────────────────────────
+
+    (bar.set-interval 1)
+
+How often the bar re-fetches data and redraws itself, in
+seconds. Default is 1. Lower = more CPU, higher = slower
+updates. There's no sub-second precision.
+
+────────────────────────────────────────────────────────────
+  3. FONT
+────────────────────────────────────────────────────────────
+
+    (bar.set-font "DejaVu Sans" size 14)
+
+First argument is the font family (a string). After that,
+key-value pairs. The only useful key is size:
+
+    (bar.set-font "Fira Code" size 12)
+    (bar.set-font "Noto Sans" size 15)
+
+If you leave out size, it defaults to 14. The font needs to
+be installed on your system (fc-list to check).
+
+────────────────────────────────────────────────────────────
+  4. COLOURS & BAR HEIGHT
+────────────────────────────────────────────────────────────
+
+    (bar.set-background height 30 colour "#1e1e2e" font-color "#c0caf5")
+
+All key-value pairs, order doesn't matter:
+
+    height      — bar thickness in pixels
+    colour      — background hex, "#" optional
+    color       — same thing, I accept both spellings
+    font-color  — foreground/text hex
+    font-colour — same thing
+
+You can skip any of them:
+
+    (bar.set-background height 24)
+    (bar.set-background font-color "#fff" colour "#222")
+
+────────────────────────────────────────────────────────────
+  5. SYSTEM TRAY
+────────────────────────────────────────────────────────────
+
+Not yet implemented (on the roadmap).
+
+The config parser accepts (bar.systray #t) but it does
+nothing currently. Patches welcome.
+
+────────────────────────────────────────────────────────────
+  6. WIDGETS — THE CORE OF THE BAR
+────────────────────────────────────────────────────────────
+
+Widgets are organised into three sides:
+
+    (bar.set-left   widget1 widget2 ...)
+    (bar.set-center widget1 widget2 ...)
+    (bar.set-right  widget1 widget2 ...)
+
+Each widget is either a source name (one of the built-in
+data sources listed below) or a quoted string (literal
+text). They appear in the order you list them.
+
+SOURCES:
+
+   clock         Current time, HH:MM format. 24-hour only.
+
+   cpu           CPU usage percentage, like "75%". Uses /proc/stat.
+                 First reading is always blank (needs a
+                 delta to compute). After that, averages
+                 over ~2 seconds, updates every tick.
+
+   memory        RAM usage, like "3.2/15.6G". Reads
+                 /proc/meminfo.
+
+   battery       Battery charge percentage, like "87%".
+                 Reads /sys/class/power_supply/BAT0/uevent
+                 (or BAT1). Cached for 1 second.
+
+  battery-state Charge arrow: ↑ (Charging), ↓ (Discharging),
+                — (Full/Not charging). Reads the same sysfs
+                files as battery. Use this alongside battery
+                to get "87% ↑" instead of baking the arrow
+                into the percentage display. It is a SEPARATE
+                widget, not a flag on battery — you place it
+                wherever you want relative to battery:
+
+                  (bar.set-right (battery fmt "Bat: {}") txt " " battery-state)
+
+  distro        Distro name from /etc/os-release ID field.
+                Falls back to "linux".
+
+  distro-logo   Distro logo as an SVG icon, auto-detected
+                from /etc/os-release. Supported distros:
+                nixos, ubuntu, debian, arch, fedora, void.
+                Everything else falls back to a generic
+                "linux" icon lookup. The icon is looked up
+                in your system's icon theme (Freedesktop
+                standard paths: hicolor, gnome, etc.).
+                Scales with the bar height — you control the
+                size with bar.set-logo-size (see section 8).
+
+  wifi          Active WiFi network, like "MyNetwork 55%".
+                Uses nmcli to poll the currently connected
+                network. If no WiFi but ethernet is active,
+                shows "eth". If nothing active, blank.
+
+  volume        Volume percentage of the default audio sink,
+                like "70%". Uses wpctl get-volume @DEFAULT_AUDIO_SINK@
+                piped through awk. Requires WirePlumber/PulseAudio.
+
+  !command      Runs a shell command and shows its output.
+                The ! is part of the name, not a separate
+                syntax. For simple commands with no spaces:
+
+                  (bar.set-right !date txt " at " !whoami)
+
+                For commands with arguments, wrap in quotes
+                with !"..." — the content is passed to the
+                shell via popen, so use single quotes inside
+                to group arguments:
+
+                  (!"date '+%A %d %Z'")
+                  (!"uptime -p")
+
+                The command is re-run EVERY poll interval
+                (every second by default). Keep them fast.
+                If the command fails or produces nothing,
+                the widget is blank.
+
+  txt "..."   Literal text to display. The word "txt" (or "text")
+                followed by a quoted string. Use this for labels,
+                spaces, and any static text between sources:
+
+                  (bar.set-left distro-logo txt " " (cpu fmt "CPU: {}"))
+
+                The txt keyword is required — bare quoted strings
+                are not treated as inline text.
+
+EXAMPLES:
+
+    (bar.set-right (battery fmt "Bat: {}") txt " | " (wifi fmt "SSID: {}"))
+    (bar.set-center clock)
+    (bar.set-left distro-logo txt " " (cpu fmt "CPU: {}"))
+
+HOW LAYOUT WORKS:
+
+The bar draws things in this order:
+
+  1. Logo (if bar.set-logo was used) — fixed at x=5
+  2. Center widgets — centred in the remaining space
+  3. WiFi icon — right side, between widgets and edge
+  4. Right widgets — drawn right-to-left from the right
+     edge (minus padding)
+  5. Left widgets — drawn left-to-right from the left edge
+     (plus padding)
+
+So left and right widgets "meet in the middle" while the
+center widget floats in the remaining gap. If there isn't
+enough room, things will overlap.
+
+PER-WIDGET COLOURS:
+
+You can change the font colour partway through a widget list.
+The colour keyword applies to every widget after it until
+the next colour keyword:
+
+    (bar.set-right txt "BAT: " colour "#ff0000" (battery fmt "{}") txt " | " (wifi fmt "SSID: {}"))
+
+This changes the battery text to red, but leaves "BAT: " and
+" | " wifi in the default font colour. If you want wifi in a
+different colour, add another colour keyword before it:
+
+    (bar.set-right txt "BAT: " colour "#f00" (battery fmt "{}") colour "#0f0" txt " | " (wifi fmt "SSID: {}"))
+
+Colour values are standard hex strings like "#ff0000". The
+keyword is just colour (or color), not a per-source property.
+
+NEXT CALL WINS:
+
+If you call bar.set-left twice, the second one replaces the
+first entirely. They don't merge. Same for bar.set-right,
+bar.set-center, bar.set-background, everything. The last
+call before (bar.start) is what takes effect.
+
+────────────────────────────────────────────────────────────
+  7. WIFI ICON
+────────────────────────────────────────────────────────────
+
+    (bar.wifi-icon #t)     ; visual icon (default)
+    (bar.wifi-icon #f)     ; text only
+
+When the icon is on, it sits between the right-side widgets
+and the right edge of the bar. It draws four small filled
+arc bars stacked vertically, centred near the top of the bar:
+
+  ≥75% signal -> 4 bars
+  ≥50%        -> 3 bars
+  ≥25%        -> 2 bars
+  ≥8%         -> 1 bar
+  <8%         -> 0 bars (still draws the arc outline)
+
+The icon size scales with bar height automatically. It also
+polls nmcli for signal strength every 2 seconds (same source
+as the wifi text widget). This icon is COMPLETELY SEPARATE
+from the "wifi" text source — you can have the icon on and
+also display "wifi" in your widgets, or only one, or neither.
+
+────────────────────────────────────────────────────────────
+  8. DISTRO LOGO
+────────────────────────────────────────────────────────────
+
+There are two ways to put a distro logo in your bar:
+
+  (bar.set-left distro-logo)     — placed as a regular widget,
+                                    participates in spacing and
+                                    appears wherever you put it
+
+  (bar.set-logo "nix-snowflake") — fixed at x=5 on the far
+  (bar.set-logo distro)          — left, does not push other
+                                    widgets
+
+With bar.set-logo, you can use:
+
+  (bar.set-logo distro)        — auto-detect from os-release
+  (bar.set-logo "nix-snowflake") — specific logo name
+
+Logo names are looked up from your system's icon theme.
+The supported auto-detect mappings are:
+
+  nixos  -> nix-snowflake
+  ubuntu -> ubuntu
+  debian -> debian
+  arch   -> arch
+  fedora -> fedora
+  void   -> void
+  *      -> linux (fallback)
+
+The icon search follows the Freedesktop icon theme spec:
+it looks in hicolor/scalable/apps/, hicolor/48x48/apps/,
+and similar standard paths. If you install an icon pack,
+logos will be found automatically.
+
+SIZE:
+
+    (bar.set-logo-size 24)
+
+If unset, defaults to bar height minus 8 pixels. With logo
+size 24 and bar height 30, the logo is 24x24. The SVG is
+rendered directly onto the bar surface (no pixel buffers),
+so it scales cleanly without artefacts even at tiny sizes.
+
+The old (bar.set-logo) approach draws the logo at a fixed
+x=5, independent of padding or widget spacing. It does
+NOT appear in widget lists — it's done separately. The
+distro-logo widget approach gives you more control over
+positioning.
+
+────────────────────────────────────────────────────────────
+  9. SEPARATORS
+────────────────────────────────────────────────────────────
+
+Separators are OFF by default (separator_text = ""). To
+turn them on:
+
+    (bar.separator " | " colour "#585b70")
+
+This inserts " | " between consecutive widgets on the same
+side. So if your right side is:
+
+    battery " " cpu " " memory
+
+With separator " | ", it becomes:
+
+    battery " | " " " " | " cpu " | " " " " | " memory
+
+Which is probably not what you want if you already have
+spaces and pipes in your widget list. The separator is best
+used when you have plain sources and no manual spacing:
+
+    (bar.separator " | ")
+    (bar.set-right (battery fmt "{}") (cpu fmt "{}") (memory fmt "{}"))
+
+Now each widget gets " | " inserted before it (except the
+first). The separator also adds its own width to the gap,
+pushing widgets apart naturally.
+
+You can set a colour for the separator text:
+
+    (bar.separator " · " colour "#888")
+
+Leave it out entirely or set an empty string to keep
+separators off:
+
+    (bar.separator "")     ; same as default
+
+────────────────────────────────────────────────────────────
+  10. WIDGET GAP
+────────────────────────────────────────────────────────────
+
+    (bar.set-widget-gap 8)     ; default
+    (bar.set-widget-gap 0)     ; tight
+
+Adds N pixels of blank space after every widget on a side
+(except the last one). The space is in addition to whatever
+spacing the widget naturally has. This is the cleanest way
+to add breathing room between all your widgets at once.
+
+This is applied AFTER the separator (if any). So with a gap
+of 4 and a separator of " | ", you get:
+
+    widget1  |  widget2  |  widget3
+
+────────────────────────────────────────────────────────────
+  11. EDGE PADDING
+────────────────────────────────────────────────────────────
+
+    (bar.pad left 8)
+    (bar.pad right 8)
+    (bar.pad center 10)
+
+Pushes widgets away from the bar edges:
+
+  left   — added AFTER the fixed logo (if any), before the
+           first left widget. Moves all left widgets right.
+
+  right  — added AFTER the wifi icon and right widgets,
+           before the right edge. Moves all right widgets
+           left.
+
+  center — currently does nothing (reserved).
+
+There's also a wrapping form:
+
+    (bar.padding 8 (bar.set-left clock (cpu fmt "CPU: {}")))
+
+Which is exactly the same as (bar.pad left 8) followed by
+(bar.set-left clock cpu). Just convenience.
+
+────────────────────────────────────────────────────────────
+  12. VERTICAL OFFSET
+────────────────────────────────────────────────────────────
+
+    (bar.set-left-vy 1)      ; nudge left widgets down
+    (bar.set-center-vy 0)    ; leave centre alone
+    (bar.set-right-vy -1)    ; nudge right widgets up
+
+Each side has its own vertical offset. Positive = down,
+negative = up. The default baseline is roughly the centre
+of the bar plus a font-specific adjustment. Use this when
+your font's glyphs are weirdly positioned — some fonts sit
+higher or lower than others at the same nominal size.
+
+────────────────────────────────────────────────────────────
+  13. FORMAT STRINGS (ALL SOURCES)
+────────────────────────────────────────────────────────────
+
+    (bar.set-format battery "{}")
+    (bar.set-format wifi "Battery: {}")
+
+The {} is replaced with the widget's value. If you omit {},
+the entire format string becomes the value. Useful for
+adding prefixes or suffixes:
+
+    (bar.set-format battery "[{}]")     ; "[87%]"
+    (bar.set-format wifi "Signal: {}")  ; "Signal: MyNet 55%"
+
+Supported: battery, wifi, cpu, memory, clock, distro, and
+any !command source.
+
+INLINE FORMAT:
+
+You can also skip bar.set-format entirely and attach a format
+string directly to a widget inside bar.set-left/center/right:
+
+    (bar.set-right (battery fmt "Bat: {}") txt " | " (wifi fmt "SSID: {}"))
+
+The widget is wrapped in parentheses with the word "format"
+(or "fmt") and the format string. This overrides any global
+bar.set-format for that specific widget.
+
+    (bar.set-left (cpu fmt "CPU: {}") txt " | " (memory fmt "Mem: {}"))
+    (bar.set-center (clock fmt "Time: {}"))
+    (bar.set-right (battery fmt "[{}]") txt " " (wifi fmt "Signal: {}"))
+
+Works with any source — clock, cpu, memory, battery, wifi,
+distro, even !commands.
+
+CPU and memory return raw values ("75%", "3.2/15.6G") so you
+typically want to add a label via format or inline text:
+
+    (bar.set-left (cpu fmt "CPU: {}") txt " | " (memory fmt "Mem: {}"))
+
+────────────────────────────────────────────────────────────
+  14. CUSTOM SHELL COMMANDS
+────────────────────────────────────────────────────────────
+
+Prefix any source name with ! to make it a shell command:
+
+    (bar.set-left !uptime)
+    (bar.set-right (!"date '+%H:%M'") txt " -- " !whoami)
+    (bar.set-center !uptime)
+
+The command is run EVERY poll interval using popen(), so
+keep it fast (<100ms). If it blocks, your whole bar freezes.
+If the command fails or outputs nothing, the widget shows
+blank.
+
+Useful quick commands:
+
+    !date          — "Wed Jun 24 2026"
+    !whoami        — your username
+    !uptime        — "12:34  up 2 hours"
+    !hostname      — machine name
+    (!"date '+%A %d'")    — "Wednesday 24"
+    (!"uptime -p")        — "up 2 hours"
+
+You can mix commands with regular sources:
+
+    (bar.set-left distro-logo txt " " !hostname)
+    (bar.set-center clock)
+    (bar.set-right (cpu fmt "CPU: {}") txt " | " (!"date '+%H:%M'"))
+
+────────────────────────────────────────────────────────────
+  PUTTING IT ALL TOGETHER
+────────────────────────────────────────────────────────────
+
+Minimal working config:
+
+    (bar.create)
+    (bar.set-interval 1)
+    (bar.set-background height 30 colour "#000" font-color "#fff")
+    (bar.set-left distro-logo (cpu fmt "CPU: {}"))
+    (bar.set-center clock)
+    (bar.set-right (battery fmt "Bat: {}") txt " " battery-state txt " | " (wifi fmt "SSID: {}"))
+    (bar.wifi-icon #t)
+    (bar.set-widget-gap 0)
+    (bar.pad left 8)
+    (bar.start)
+
+More elaborate:
+
+    (bar.create)
+    (bar.set-interval 1)
+    (bar.set-background height 30 colour "#1e1e2e" font-color "#cdd6f4")
+    (bar.set-font "DejaVu Sans" size 13)
+    (bar.wifi-icon #t)
+    (bar.set-logo-size 24)
+    (bar.set-widget-gap 0)
+    (bar.set-left colour "#89b4fa" distro-logo)
+    (bar.set-center colour "#f5c2e7" clock)
+    (bar.set-right colour "#f38ba8" (battery fmt "Bat: {}") txt " " battery-state colour "#fab387" txt " | " (cpu fmt "CPU: {}") txt " | " (memory fmt "Mem: {}") txt " | " (wifi fmt "SSID: {}"))
+    (bar.pad left 8)
+    (bar.start)
+
+(bar.start) is the last thing you write — it blocks forever.
+Kill the process to quit.
