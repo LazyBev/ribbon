@@ -1,6 +1,6 @@
 ; config.rib — status bar configuration
 (bar.create)
-(bar.set-interval 1)
+(bar.set-interval 0.2)
 (bar.set-font "DejaVu Sans" size 14)
 (bar.set-background height 30 colour "#1e1e2e" font-color "#c0caf5")
 ; optional auto-separator: (bar.separator " | " colour "#585b70")
