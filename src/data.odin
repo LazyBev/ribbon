@@ -416,7 +416,7 @@ get_workspaces :: proc(buf: ^Buf512) -> cstring {
   pos := 0
   for fgets(&line[0], i32(len(line)), f) != nil {
     if line[0] != ' ' { continue }
-    active := line[3] == '*'
+    active := line[1] == '*'
     j := 4
     for j < len(line) && (line[j] == ' ' || line[j] == '\t') { j += 1 }
     idx_start := j
