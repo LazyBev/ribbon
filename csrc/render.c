@@ -218,9 +218,10 @@ int renderer_get_fd(renderer_t *r) {
 int renderer_get_width(renderer_t *r) { return r->width; }
 int renderer_get_height(renderer_t *r) { return r->height; }
 
-void renderer_dispatch(renderer_t *r) {
-  wl_display_dispatch_pending(r->display);
-  wl_display_flush(r->display);
+int renderer_dispatch(renderer_t *r) {
+  if (wl_display_dispatch_pending(r->display) < 0) return -1;
+  if (wl_display_flush(r->display) < 0) return -1;
+  return 0;
 }
 
 /* ── internal: clear draw surface to background colour ──────── */

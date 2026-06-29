@@ -11,7 +11,7 @@ void renderer_destroy(renderer_t *r);
 int renderer_get_fd(renderer_t *r);
 int renderer_get_width(renderer_t *r);
 int renderer_get_height(renderer_t *r);
-void renderer_dispatch(renderer_t *r);
+int  renderer_dispatch(renderer_t *r);
 
 /* drawing surface management */
 void renderer_clear(renderer_t *r);

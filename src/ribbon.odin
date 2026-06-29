@@ -12,7 +12,7 @@ foreign _ {
   renderer_get_fd         :: proc(r: rawptr) -> i32 ---
   renderer_get_width      :: proc(r: rawptr) -> i32 ---
   renderer_get_height     :: proc(r: rawptr) -> i32 ---
-  renderer_dispatch       :: proc(r: rawptr) ---
+  renderer_dispatch       :: proc(r: rawptr) -> i32 ---
   renderer_clear          :: proc(r: rawptr) ---
   renderer_set_font       :: proc(r: rawptr, family: cstring, sz: i32) ---
   renderer_set_font_color :: proc(r: rawptr, fr, fg, fb: f64) ---
@@ -179,7 +179,10 @@ run_bar :: proc(cfg: ^BarConfig) {
     timeout: i32 = 50 if first else cfg.interval_ms
 
     poll(&pollfd, 1, timeout)
-    if pollfd.revents & POLLIN != 0 { renderer_dispatch(r) }
+    if pollfd.revents & POLLIN != 0 && renderer_dispatch(r) < 0 {
+      fmt.eprintln("ribbon: wayland disconnected")
+      os.exit(1)
+    }
 
     width  := renderer_get_width(r)
     height := renderer_get_height(r)
