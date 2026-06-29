@@ -402,6 +402,51 @@ get_volume :: proc(buf: ^Buf512) -> cstring {
   return run_cmd(cstring(&cmd_buf[0]), buf)
 }
 
+/* ── workspaces (niri) ──────────────────────────────────────── */
+get_workspaces :: proc(buf: ^Buf512) -> cstring {
+  cmd_buf: Buf512
+  cmd := "niri msg workspaces"
+  n := copy(cmd_buf[:], cmd)
+  if n < len(cmd_buf) { cmd_buf[n] = 0 }
+  f := popen(cstring(&cmd_buf[0]), "r")
+  if f == nil { buf[0] = 0; return cstring(&buf[0]) }
+  defer pclose(f)
+
+  line: Buf512
+  pos := 0
+  for fgets(&line[0], i32(len(line)), f) != nil {
+    if line[0] != ' ' { continue }
+    active := line[3] == '*'
+    j := 4
+    for j < len(line) && (line[j] == ' ' || line[j] == '\t') { j += 1 }
+    idx_start := j
+    for j < len(line) && line[j] >= '0' && line[j] <= '9' { j += 1 }
+    idx_end := j
+    for j < len(line) && line[j] == ' ' { j += 1 }
+    name_start := j
+    name_end := j
+    if j < len(line) && line[j] == '"' {
+      j += 1
+      name_start = j
+      for j < len(line) && line[j] != '"' { j += 1 }
+      name_end = j
+    } else {
+      name_start = idx_start
+      name_end = idx_end
+    }
+
+    if pos > 0 && pos < len(buf)-1 { buf[pos] = ' '; pos += 1 }
+    if active && pos < len(buf)-1 { buf[pos] = '['; pos += 1 }
+    for k := name_start; k < name_end && pos < len(buf)-1; k += 1 {
+      buf[pos] = line[k]
+      pos += 1
+    }
+    if active && pos < len(buf)-1 { buf[pos] = ']'; pos += 1 }
+  }
+  buf[pos] = 0
+  return cstring(&buf[0])
+}
+
 /* ── resolve: source → string ──────────────────────────────── */
 apply_format :: proc(buf: ^Buf512, raw: cstring, fmt: string) -> cstring {
   if fmt == "" || fmt == "{}" { return raw }
@@ -471,6 +516,8 @@ resolve_source :: proc(source: DataSource, buf: ^Buf512, cpu_cache: ^CpuCache, b
     }
   case DataVolume:
     raw = get_volume(buf)
+  case DataWorkspaces:
+    raw = get_workspaces(buf)
   case DataCmd:
     cmd_buf: Buf512
     n := copy(cmd_buf[:], s.command)

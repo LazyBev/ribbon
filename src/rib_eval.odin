@@ -581,6 +581,7 @@ source_from_name :: proc(name: string) -> DataSource {
   case "distro-logo": return DataDistroLogo{name = get_distro_logo()}
   case "wifi":    return DataWifi{}
   case "volume":  return DataVolume{}
+  case "workspaces": return DataWorkspaces{}
   }
   return DataCmd{command = name}
 }

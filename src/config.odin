@@ -11,6 +11,7 @@ DataSource :: union {
   DataDistroLogo,
   DataWifi,
   DataVolume,
+  DataWorkspaces,
   DataCmd,
 }
 
@@ -24,6 +25,7 @@ DataDistro  :: struct {}
 DataDistroLogo :: struct { name: string }
 DataWifi    :: struct {}
 DataVolume  :: struct {}
+DataWorkspaces :: struct {}
 DataCmd     :: struct { command: string }
 
 Segment :: struct {
